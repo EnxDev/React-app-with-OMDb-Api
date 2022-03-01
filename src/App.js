@@ -1,32 +1,42 @@
-import logo from './logo.svg';
 import './App.css';
 import { useState, useEffect} from 'react';
 import MovieList from './components/MovieList';
-import NavBar from './components/NavBar';
+import Navbar from './components/Navbar';
 
 const APIKEY="648661dc";
 const APIURL ='http://www.omdbapi.com';
 
 const fetchMovies = async (search = 'The godfather') => {
+   if(search.length < 1){
+      return;
+   }
   const response = await fetch(APIURL + '?apikey=' + APIKEY + '&s=' + search).then(res => res.json());
   console.log(response)
-  const { Search: movies, totalResults: totalCount } = response;
-  return { movies, totalCount };
+  const {Error: error , Search: movies, totalResults: totalCount } = response;
+  return { error : error ?? '', movies, totalCount };
 }
-
 
 function App() {
      
-  const [movies, setMovies] = useState([]);
-  const [totalCount, setTotalCount] = useState(0);
+   const [movies, setMovies] = useState([]);
+   const [totalCount, setTotalCount] = useState(0);
+   const [error, setError] = useState('');
 
+   const callApi = async (search = "") => {
+      const data = await fetchMovies(search);
+      setError(data.error);
+      if(!error.length){
+         setMovies(data.movies);
+         setTotalCount(data.totalCount);
+      }else{
+         setMovies([]);
+         setTotalCount(0);
+      }
+
+   }
   useEffect(() => {
-    const callApi = async () => {
-      const data = await fetchMovies();
-      setMovies(data.movies);
-      setTotalCount(data.totalCount);
-    }
-    callApi();
+
+    callApi('Godfather');
     return () => {
      
     }
@@ -34,12 +44,14 @@ function App() {
 
   return (
    <>
-   <NavBar />
+   <Navbar onSearchChange = {callApi}/>
     <div className="App container-fluid">
-      <header className="App-header">
-         <h1> MY FAVORITE MOVIES</h1>
-         <MovieList movies={movies} />
-      </header>
+      <div className='row'>
+         <h1 className='title'> MY FAVORITE MOVIES {totalCount ? '(' + totalCount + ')' : '' }</h1>
+         {
+            !error ? <MovieList movies = {movies} /> : <h2 className='red'> {error} </h2>
+         }
+      </div>   
     </div>
    </>
   );
